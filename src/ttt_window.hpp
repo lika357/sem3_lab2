@@ -1,3 +1,4 @@
+#include "array_sequence.hpp"
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <cmath>
@@ -6,7 +7,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 #include "../include/benchmark.hpp"
 #include "../include/board.hpp"
@@ -62,11 +62,11 @@ class TttWindow {
     Label infoLabel{""};
     Label hintLabel{""};
 
-    std::vector<std::unique_ptr<Button>> cells;
-    std::vector<std::unique_ptr<Label>> searchLabels;
-    std::vector<std::unique_ptr<Label>> dictLabels;
-    std::vector<BenchRow> searchRows;
-    std::vector<DictBenchRow> dictRows;
+    ArraySequence<std::unique_ptr<Button>> cells;
+    ArraySequence<std::unique_ptr<Label>> searchLabels;
+    ArraySequence<std::unique_ptr<Label>> dictLabels;
+    ArraySequence<BenchRow> searchRows;
+    ArraySequence<DictBenchRow> dictRows;
 
     Screen screen = Screen::MENU;
     Screen pendingScreen = Screen::MENU;
@@ -174,14 +174,14 @@ class TttWindow {
     }
 
     void BuildBoard() {
-        cells.clear();
+        cells.Clear();
         float cellSize = std::min(80.0f, BOARD_AREA / size);
         for(int row = 0; row < size; row++) {
             for(int col = 0; col < size; col++) {
                 auto cell = std::make_unique<Button>("", cellSize - 4.0f, cellSize - 4.0f);
                 cell->setPosition(BOARD_X + col * cellSize, BOARD_Y + row * cellSize);
                 cell->setOnClick(std::bind(&TttWindow::OnCellClick, this, row, col));
-                cells.push_back(std::move(cell));
+                cells.Append(std::move(cell));
             }
         }
         RefreshBoard();
@@ -191,11 +191,11 @@ class TttWindow {
         for(int row = 0; row < size; row++) {
             for(int col = 0; col < size; col++) {
                 Button& cell = *cells[row * size + col];
-                int value = board.Get(row, col);
-                if(value == CROSS) {
+                CellState value = board.Get(row, col);
+                if(value == CellState::Cross) {
                     cell.setText("X");
                     cell.setColor(Colors::ELEMENT);
-                } else if(value == NOUGHT) {
+                } else if(value == CellState::Nought) {
                     cell.setText("O");
                     cell.setColor(Colors::CELL_O);
                 } else {
@@ -224,10 +224,10 @@ class TttWindow {
     }
 
     bool CheckEnd() {
-        int winner = board.Winner();
-        if(winner == CROSS) {
+        CellState winner = board.Winner();
+        if(winner == CellState::Cross) {
             statusLabel.setText(screen == Screen::PLAY ? "You win!" : "X wins");
-        } else if(winner == NOUGHT) {
+        } else if(winner == CellState::Nought) {
             statusLabel.setText(screen == Screen::PLAY ? "Computer wins" : "O wins");
         } else if(board.IsFull()) {
             statusLabel.setText("Draw");
@@ -247,15 +247,15 @@ class TttWindow {
     }
 
     void OnPlayClick(int row, int col) {
-        if(gameOver || board.Get(row, col) != EMPTY) {
+        if(gameOver || board.Get(row, col) != CellState::Empty) {
             return;
         }
-        board.Place(row, col, CROSS);
+        board.Place(row, col, CellState::Cross);
         if(!CheckEnd()) {
             Searcher searcher(algorithm, tableType, depth, GetRadius());
-            SearchResult result = searcher.Recommend(board, NOUGHT);
+            SearchResult result = searcher.Recommend(board, CellState::Nought);
             if(result.found) {
-                board.Place(result.move.row, result.move.col, NOUGHT);
+                board.Place(result.move.row, result.move.col, CellState::Nought);
             }
             infoLabel.setText(FormatResult(result, searcher.GetTableSize()));
             if(!CheckEnd()) {
@@ -266,12 +266,12 @@ class TttWindow {
     }
 
     void OnAnalysisClick(int row, int col) {
-        int value = board.Get(row, col);
-        if(value == EMPTY) {
-            board.Place(row, col, CROSS);
-        } else if(value == CROSS) {
+        CellState value = board.Get(row, col);
+        if(value == CellState::Empty) {
+            board.Place(row, col, CellState::Cross);
+        } else if(value == CellState::Cross) {
             board.Erase(row, col);
-            board.Place(row, col, NOUGHT);
+            board.Place(row, col, CellState::Nought);
         } else {
             board.Erase(row, col);
         }
@@ -285,12 +285,12 @@ class TttWindow {
     }
 
     void OnRecommendClick() {
-        if(board.Winner() != EMPTY || board.IsFull()) {
+        if(board.Winner() != CellState::Empty || board.IsFull()) {
             statusLabel.setText("The game is over, nothing to recommend");
             return;
         }
         Searcher searcher(algorithm, tableType, depth, GetRadius());
-        SearchResult result = searcher.Recommend(board, NOUGHT);
+        SearchResult result = searcher.Recommend(board, CellState::Nought);
         hasRecommendation = result.found;
         recommended = result.move;
         statusLabel.setText("O should play: row " + std::to_string(result.move.row + 1) + ", col " +
@@ -329,33 +329,33 @@ class TttWindow {
     }
 
     void BuildBenchLabels() {
-        searchLabels.clear();
-        dictLabels.clear();
-        for(size_t i = 0; i < searchRows.size(); i++) {
+        searchLabels.Clear();
+        dictLabels.Clear();
+        for(size_t i = 0; i < searchRows.GetLength(); i++) {
             const BenchRow& row = searchRows[i];
             std::stringstream ss;
             ss << row.name << " nodes=" << row.nodes << " hits=" << row.hits << " " << std::fixed
                << std::setprecision(2) << row.ms << "ms";
             auto label = std::make_unique<Label>(ss.str());
             label->setPosition(50.0f, 200.0f + i * 32.0f);
-            searchLabels.push_back(std::move(label));
+            searchLabels.Append(std::move(label));
         }
-        for(size_t i = 0; i < dictRows.size(); i++) {
+        for(size_t i = 0; i < dictRows.GetLength(); i++) {
             const DictBenchRow& row = dictRows[i];
             std::stringstream ss;
             ss << row.name << " " << row.order << " n=" << row.count << " " << std::fixed
                << std::setprecision(2) << row.ms << "ms";
             auto label = std::make_unique<Label>(ss.str());
             label->setPosition(50.0f + (i % 2) * 400.0f, 440.0f + (i / 2) * 32.0f);
-            dictLabels.push_back(std::move(label));
+            dictLabels.Append(std::move(label));
         }
     }
 
     void ClearBench() {
-        searchRows.clear();
-        dictRows.clear();
-        searchLabels.clear();
-        dictLabels.clear();
+        searchRows.Clear();
+        dictRows.Clear();
+        searchLabels.Clear();
+        dictLabels.Clear();
     }
 
     void RequestScreen(Screen next) {
@@ -369,7 +369,7 @@ class TttWindow {
         menuLayout.setVisible(next == Screen::MENU);
         settingsLayout.setVisible(next != Screen::MENU);
         actionLayout.setVisible(next != Screen::MENU);
-        cells.clear();
+        cells.Clear();
         ClearBench();
         hintLabel.setText("");
 
@@ -437,7 +437,7 @@ class TttWindow {
         if(settingsLayout.handleEvent(event) || actionLayout.handleEvent(event)) {
             return;
         }
-        for(size_t i = 0; i < cells.size(); i++) {
+        for(size_t i = 0; i < cells.GetLength(); i++) {
             if(cells[i]->handleEvent(event)) {
                 return;
             }
@@ -446,7 +446,7 @@ class TttWindow {
 
     void DrawBars() {
         float maxWidth = 500.0f;
-        for(size_t i = 0; i < searchRows.size(); i++) {
+        for(size_t i = 0; i < searchRows.GetLength(); i++) {
             double microseconds = searchRows[i].ms * 1000.0;
             float width = static_cast<float>(40.0 * std::log10(1.0 + microseconds));
             if(width > maxWidth) {

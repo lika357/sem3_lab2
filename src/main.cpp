@@ -6,9 +6,8 @@
 sf::Font Widget::defaultFont;
 
 int main() {
-    
-    Board board(3,3);
-    board.Place(1,1,1);
+    Board board(3, 3);
+    board.Place(1, 1, CellState::Cross);
     try {
         TttWindow window(static_cast<size_t>(Window::WIDTH), static_cast<size_t>(Window::HEIGHT),
                          "TIC TAC TOE");

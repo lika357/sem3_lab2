@@ -15,12 +15,12 @@ const sf::Color ELEMENT = sf::Color(173, 216, 230);
 const sf::Color CELL_O = sf::Color(144, 238, 144);
 const sf::Color CELL_BEST = sf::Color(255, 235, 120);
 const sf::Color BAR = sf::Color(101, 67, 33);
-} 
+}  // namespace Colors
 
 namespace Window {
 constexpr float WIDTH = 1280.0f;
 constexpr float HEIGHT = 720.0f;
-}  
+}  // namespace Window
 
 namespace ButtonSizes {
 constexpr float CHOOSE_W = 300.0f;
@@ -31,7 +31,7 @@ constexpr float STACK_H = 45.0f;
 
 constexpr float ELEMENT_W = 80.0f;
 constexpr float ELEMENT_H = 80.0f;
-}
+}  // namespace ButtonSizes
 
 namespace FontSizes {
 constexpr unsigned int TITLE = 30;
@@ -39,7 +39,7 @@ constexpr unsigned int BUTTON = 16;
 constexpr unsigned int INPUT = 28;
 constexpr unsigned int RESULT = 24;
 constexpr unsigned int HINT = 20;
-} 
+}  // namespace FontSizes
 
 namespace Borders {
 constexpr float BUTTON_THICKNESS = 2.0f;
@@ -59,7 +59,7 @@ constexpr float FUNC_GAP = 6.0f;
 
 constexpr float ELEM_Y = 180.0f;
 constexpr float ELEM_GAP = 10.0f;
-}  
+}  // namespace LayoutPositions
 
 namespace ElementPositions {
 constexpr float TITLE_X = 450.0f;
@@ -70,4 +70,4 @@ constexpr float INPUT_Y = 650.0f;
 
 constexpr float RESULT_X = 50.0f;
 constexpr float RESULT_Y = 650.0f;
-}  
+}  // namespace ElementPositions

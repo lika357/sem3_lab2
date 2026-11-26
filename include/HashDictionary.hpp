@@ -1,17 +1,20 @@
 #pragma once
 
-#include <cstddef>
-#include <functional>
-#include <stdexcept>
-#include <utility>//shrinkAt  сделать проценты добл
-
 #include "array_sequence.hpp"
 #include "hash_functions.hpp"
 #include "i_dictionary.hpp"
 
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <utility>
+
 template <typename Key, typename Value>
 class HashDictionary : public IDictionary<Key, Value> {
    private:
+    static constexpr double MIN_LOAD_FACTOR = 0.25;  
+    static constexpr double MAX_LOAD_FACTOR = 0.75;  
+
     struct Entry {
         Key key;
         Value value;
@@ -23,7 +26,6 @@ class HashDictionary : public IDictionary<Key, Value> {
     ArraySequence<Bucket> buckets;
     HashFunc hashFunc;
     size_t count;
-    size_t shrinkAt;
     size_t factor;
 
     size_t IndexOf(const Key& key, size_t capacity) const {
@@ -52,10 +54,25 @@ class HashDictionary : public IDictionary<Key, Value> {
         buckets = std::move(newBuckets);
     }
 
+    void TryShrink() {
+        size_t capacity = buckets.GetLength();
+        double loadFactor = static_cast<double>(count) / capacity;
+        if(loadFactor <= MIN_LOAD_FACTOR && capacity >= 8) {
+            Resize(capacity / factor);
+        }
+    }
+
+    void TryGrow() {
+        size_t capacity = buckets.GetLength();
+        if(count == capacity) {
+            Resize(capacity * factor);
+        }
+    }
+
    public:
-    HashDictionary(HashFunc func = nullptr, size_t startCapacity = 8, size_t shrinkAt = 4, size_t factor = 2)
-        : hashFunc(func), count(0), shrinkAt(shrinkAt), factor(factor) {
-        if(startCapacity == 0 || factor < 2 || shrinkAt < factor) {
+    HashDictionary(HashFunc func = nullptr, size_t startCapacity = 8, size_t factor = 2)
+        : hashFunc(func), count(0), factor(factor) {
+        if(startCapacity == 0 || factor < 2) {
             throw std::invalid_argument("Wrong hash table parameters");
         }
         if(!hashFunc) {
@@ -94,9 +111,7 @@ class HashDictionary : public IDictionary<Key, Value> {
             entry->value = element;
             return;
         }
-        if(count == buckets.GetLength()) {
-            Resize(buckets.GetLength() * factor);
-        }
+        TryGrow();
         buckets[IndexOf(key, buckets.GetLength())].Append(Entry{key, element});
         count++;
     }
@@ -107,10 +122,7 @@ class HashDictionary : public IDictionary<Key, Value> {
             if(bucket[i].key == key) {
                 bucket.RemoveAt(i);
                 count--;
-                size_t capacity = buckets.GetLength();
-                if(count <= capacity / shrinkAt && capacity / factor >= 1) {
-                    Resize(capacity / factor);
-                }
+                TryShrink();
                 return;
             }
         }

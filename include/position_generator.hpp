@@ -7,23 +7,23 @@
 inline Board RandomBoard(int size, int lineLength, int moves, unsigned int seed) {
     Board board(size, lineLength);
     std::mt19937 generator(seed);
-    int mark = CROSS;
+    CellState mark = CellState::Cross;
     int placed = 0;
     int attempts = 0;
     while(placed < moves && attempts < 10000) {
         attempts++;
         int row = generator() % size;
         int col = generator() % size;
-        if(board.Get(row, col) != EMPTY) {
+        if(board.Get(row, col) != CellState::Empty) {
             continue;
         }
         board.Place(row, col, mark);
-        if(board.Winner() != EMPTY) {
+        if(board.Winner() != CellState::Empty) {
             board.Erase(row, col);
             continue;
         }
         placed++;
-        mark = mark == CROSS ? NOUGHT : CROSS;
+        mark = mark == CellState::Cross ? CellState::Nought : CellState::Cross;
     }
     return board;
 }

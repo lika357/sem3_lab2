@@ -167,7 +167,7 @@ void TestHashCollisions() {
 }
 
 void TestHashResize() {
-    HashDictionary<int, int> hash(nullptr, 4, 4, 2);
+    HashDictionary<int, int> hash(nullptr, 4, 2);
     for(int i = 0; i < 4; i++) { hash.Add(i, i); }
     assert_func(hash.GetCapacity() == 4);
     hash.Add(4, 4);
@@ -198,8 +198,6 @@ void TestHashResize() {
 
 void TestHashWrongParameters() {
     assert_func(Throws<std::invalid_argument>([] { HashDictionary<int, int> d(nullptr, 0); }));
-    assert_func(Throws<std::invalid_argument>([] { HashDictionary<int, int> d(nullptr, 8, 4, 1); }));
-    assert_func(Throws<std::invalid_argument>([] { HashDictionary<int, int> d(nullptr, 8, 2, 4); }));
 }
 
 void TestHashStringKeys() {
@@ -225,168 +223,168 @@ void TestBoardCreate() {
 
 void TestBoardPlace() {
     Board board(3, 3);
-    board.Place(1, 1, CROSS);
-    assert_func(board.Get(1, 1) == CROSS && board.CountPieces() == 1);
-    assert_func(Throws<std::invalid_argument>([&] { board.Place(1, 1, NOUGHT); }));
-    assert_func(Throws<std::out_of_range>([&] { board.Place(3, 0, CROSS); }));
-    assert_func(Throws<std::out_of_range>([&] { board.Place(0, -1, CROSS); }));
-    assert_func(Throws<std::invalid_argument>([&] { board.Place(0, 0, EMPTY); }));
+    board.Place(1, 1, CellState::Cross);
+    assert_func(board.Get(1, 1) == CellState::Cross && board.CountPieces() == 1);
+    assert_func(Throws<std::invalid_argument>([&] { board.Place(1, 1, CellState::Nought); }));
+    assert_func(Throws<std::out_of_range>([&] { board.Place(3, 0, CellState::Cross); }));
+    assert_func(Throws<std::out_of_range>([&] { board.Place(0, -1, CellState::Cross); }));
+    assert_func(Throws<std::invalid_argument>([&] { board.Place(0, 0, CellState::Empty); }));
     assert_func(Throws<std::out_of_range>([&] { board.Get(5, 5); }));
     board.Erase(1, 1);
-    assert_func(board.Get(1, 1) == EMPTY);
-    board.Place(0, 0, NOUGHT);
+    assert_func(board.Get(1, 1) == CellState::Empty);
+    board.Place(0, 0, CellState::Nought);
     board.Clear();
     assert_func(board.CountPieces() == 0);
 }
 
 void TestBoardWinner() {
     Board row(3, 3);
-    for(int c = 0; c < 3; c++) { row.Place(1, c, CROSS); }
-    assert_func(row.Winner() == CROSS);
+    for(int c = 0; c < 3; c++) { row.Place(1, c, CellState::Cross); }
+    assert_func(row.Winner() == CellState::Cross);
 
     Board col(3, 3);
-    for(int r = 0; r < 3; r++) { col.Place(r, 2, NOUGHT); }
-    assert_func(col.Winner() == NOUGHT);
+    for(int r = 0; r < 3; r++) { col.Place(r, 2, CellState::Nought); }
+    assert_func(col.Winner() == CellState::Nought);
 
     Board diag(3, 3);
-    for(int i = 0; i < 3; i++) { diag.Place(i, i, CROSS); }
-    assert_func(diag.Winner() == CROSS);
+    for(int i = 0; i < 3; i++) { diag.Place(i, i, CellState::Cross); }
+    assert_func(diag.Winner() == CellState::Cross);
 
     Board anti(3, 3);
-    for(int i = 0; i < 3; i++) { anti.Place(i, 2 - i, NOUGHT); }
-    assert_func(anti.Winner() == NOUGHT);
+    for(int i = 0; i < 3; i++) { anti.Place(i, 2 - i, CellState::Nought); }
+    assert_func(anti.Winner() == CellState::Nought);
 
     Board none(3, 3);
-    none.Place(0, 0, CROSS);
-    none.Place(0, 1, CROSS);
-    none.Place(0, 2, NOUGHT);
-    assert_func(none.Winner() == EMPTY);
+    none.Place(0, 0, CellState::Cross);
+    none.Place(0, 1, CellState::Cross);
+    none.Place(0, 2, CellState::Nought);
+    assert_func(none.Winner() == CellState::Empty);
 
     Board shortLine(5, 3);
-    shortLine.Place(2, 1, CROSS);
-    shortLine.Place(2, 2, CROSS);
-    shortLine.Place(2, 3, CROSS);
-    assert_func(shortLine.Winner() == CROSS);
+    shortLine.Place(2, 1, CellState::Cross);
+    shortLine.Place(2, 2, CellState::Cross);
+    shortLine.Place(2, 3, CellState::Cross);
+    assert_func(shortLine.Winner() == CellState::Cross);
 
     Board two(5, 4);
-    two.Place(2, 1, CROSS);
-    two.Place(2, 2, CROSS);
-    two.Place(2, 3, CROSS);
-    assert_func(two.Winner() == EMPTY);
+    two.Place(2, 1, CellState::Cross);
+    two.Place(2, 2, CellState::Cross);
+    two.Place(2, 3, CellState::Cross);
+    assert_func(two.Winner() == CellState::Empty);
 }
 
 void TestBoardDraw() {
     Board board(3, 3);
-    int pattern[3][3] = {{CROSS, NOUGHT, CROSS}, {CROSS, NOUGHT, NOUGHT}, {NOUGHT, CROSS, CROSS}};
+    CellState pattern[3][3] = {{CellState::Cross, CellState::Nought, CellState::Cross}, {CellState::Cross, CellState::Nought, CellState::Nought}, {CellState::Nought, CellState::Cross, CellState::Cross}};
     for(int r = 0; r < 3; r++) {
         for(int c = 0; c < 3; c++) { board.Place(r, c, pattern[r][c]); }
     }
-    assert_func(board.IsFull() && board.Winner() == EMPTY);
+    assert_func(board.IsFull() && board.Winner() == CellState::Empty);
 }
 
 void TestBoardKey() {
     Board a(3, 3);
     Board b(3, 3);
-    assert_func(a.GetKey(NOUGHT) == b.GetKey(NOUGHT));
-    a.Place(0, 0, CROSS);
-    assert_func(a.GetKey(NOUGHT) != b.GetKey(NOUGHT));
-    b.Place(0, 0, CROSS);
-    assert_func(a.GetKey(NOUGHT) == b.GetKey(NOUGHT));
-    assert_func(a.GetKey(NOUGHT) != a.GetKey(CROSS));
+    assert_func(a.GetKey(CellState::Nought) == b.GetKey(CellState::Nought));
+    a.Place(0, 0, CellState::Cross);
+    assert_func(a.GetKey(CellState::Nought) != b.GetKey(CellState::Nought));
+    b.Place(0, 0, CellState::Cross);
+    assert_func(a.GetKey(CellState::Nought) == b.GetKey(CellState::Nought));
+    assert_func(a.GetKey(CellState::Nought) != a.GetKey(CellState::Cross));
     b.Erase(0, 0);
-    b.Place(0, 1, CROSS);
-    assert_func(a.GetKey(NOUGHT) != b.GetKey(NOUGHT));
+    b.Place(0, 1, CellState::Cross);
+    assert_func(a.GetKey(CellState::Nought) != b.GetKey(CellState::Nought));
 
     Board big(6, 4);
-    for(int i = 0; i < 6; i++) { big.Place(i, i, NOUGHT); }
-    assert_func(big.GetKey(NOUGHT) > 0);
+    for(int i = 0; i < 6; i++) { big.Place(i, i, CellState::Nought); }
+    assert_func(big.GetKey(CellState::Nought) > 0);
 }
 
 void TestBoardMoves() {
     Board board(5, 4);
-    std::vector<Move> moves = board.GetMoves(1);
-    assert_func(moves.size() == 1 && moves[0].row == 2 && moves[0].col == 2);
+    ArraySequence<Move> moves = board.GetMoves(1);
+    assert_func(moves.GetLength() == 1 && moves[0].row == 2 && moves[0].col == 2);
 
-    board.Place(2, 2, CROSS);
+    board.Place(2, 2, CellState::Cross);
     moves = board.GetMoves(1);
-    assert_func(moves.size() == 8);
+    assert_func(moves.GetLength() == 8);
     moves = board.GetMoves(2);
-    assert_func(moves.size() == 24);
+    assert_func(moves.GetLength() == 24);
 
     Board corner(5, 4);
-    corner.Place(0, 0, CROSS);
+    corner.Place(0, 0, CellState::Cross);
     moves = corner.GetMoves(1);
-    assert_func(moves.size() == 3);
+    assert_func(moves.GetLength() == 3);
     assert_func(Throws<std::invalid_argument>([&] { corner.GetMoves(0); }));
 
     Board full(1, 1);
-    full.Place(0, 0, CROSS);
+    full.Place(0, 0, CellState::Cross);
     assert_func(full.GetMoves(1).empty());
 }
 
 void TestEvaluate() {
     Board board(3, 3);
     assert_func(Evaluate(board) == 0);
-    board.Place(1, 1, NOUGHT);
+    board.Place(1, 1, CellState::Nought);
     assert_func(Evaluate(board) > 0);
     Board crossBoard(3, 3);
-    crossBoard.Place(1, 1, CROSS);
+    crossBoard.Place(1, 1, CellState::Cross);
     assert_func(Evaluate(crossBoard) == -Evaluate(board));
 
     Board mixed(3, 3);
-    mixed.Place(0, 0, NOUGHT);
-    mixed.Place(0, 1, CROSS);
+    mixed.Place(0, 0, CellState::Nought);
+    mixed.Place(0, 1, CellState::Cross);
     Board single(3, 3);
-    single.Place(0, 0, NOUGHT);
+    single.Place(0, 0, CellState::Nought);
     assert_func(Evaluate(mixed) != Evaluate(single));
 
     Board two(3, 3);
-    two.Place(0, 0, NOUGHT);
-    two.Place(0, 1, NOUGHT);
+    two.Place(0, 0, CellState::Nought);
+    two.Place(0, 1, CellState::Nought);
     assert_func(Evaluate(two) > Evaluate(single));
 }
 
 void TestPositionGenerator() {
     Board a = RandomBoard(4, 4, 5, 123);
     Board b = RandomBoard(4, 4, 5, 123);
-    assert_func(a.CountPieces() == 5 && a.Winner() == EMPTY);
-    assert_func(a.GetKey(NOUGHT) == b.GetKey(NOUGHT));
+    assert_func(a.CountPieces() == 5 && a.Winner() == CellState::Empty);
+    assert_func(a.GetKey(CellState::Nought) == b.GetKey(CellState::Nought));
     Board empty = RandomBoard(3, 3, 0, 1);
     assert_func(empty.CountPieces() == 0);
 }
 
 void TestSearchWinInOne() {
     Board board(3, 3);
-    board.Place(0, 0, NOUGHT);
-    board.Place(0, 1, NOUGHT);
-    board.Place(1, 0, CROSS);
-    board.Place(1, 1, CROSS);
-    board.Place(2, 2, CROSS);
+    board.Place(0, 0, CellState::Nought);
+    board.Place(0, 1, CellState::Nought);
+    board.Place(1, 0, CellState::Cross);
+    board.Place(1, 1, CellState::Cross);
+    board.Place(2, 2, CellState::Cross);
     Searcher searcher(Algorithm::ALPHABETA, TableType::HASH, 3, 1);
-    SearchResult result = searcher.Recommend(board, NOUGHT);
+    SearchResult result = searcher.Recommend(board, CellState::Nought);
     assert_func(result.found && result.move.row == 0 && result.move.col == 2);
     assert_func(result.score > WIN);
 }
 
 void TestSearchBlock() {
     Board board(3, 3);
-    board.Place(0, 0, CROSS);
-    board.Place(0, 1, CROSS);
-    board.Place(1, 1, NOUGHT);
+    board.Place(0, 0, CellState::Cross);
+    board.Place(0, 1, CellState::Cross);
+    board.Place(1, 1, CellState::Nought);
     Searcher searcher(Algorithm::MINIMAX, TableType::NONE, 4, 1);
-    SearchResult result = searcher.Recommend(board, NOUGHT);
+    SearchResult result = searcher.Recommend(board, CellState::Nought);
     assert_func(result.found && result.move.row == 0 && result.move.col == 2);
 }
 
 void TestSearchGameOver() {
     Board won(3, 3);
-    for(int c = 0; c < 3; c++) { won.Place(0, c, CROSS); }
+    for(int c = 0; c < 3; c++) { won.Place(0, c, CellState::Cross); }
     Searcher searcher(Algorithm::ALPHABETA, TableType::NONE, 3, 1);
-    assert_func(!searcher.Recommend(won, NOUGHT).found);
+    assert_func(!searcher.Recommend(won, CellState::Nought).found);
 
     Board full(1, 1);
-    full.Place(0, 0, CROSS);
-    assert_func(!searcher.Recommend(full, NOUGHT).found);
+    full.Place(0, 0, CellState::Cross);
+    assert_func(!searcher.Recommend(full, CellState::Nought).found);
 }
 
 void TestSearchWrongParameters() {
@@ -397,7 +395,7 @@ void TestSearchWrongParameters() {
 void TestSearchEmptyBoardIsDraw() {
     Board board(3, 3);
     Searcher searcher(Algorithm::ALPHABETA, TableType::HASH, 9, 1);
-    SearchResult result = searcher.Recommend(board, NOUGHT);
+    SearchResult result = searcher.Recommend(board, CellState::Nought);
     assert_func(result.found && result.score == 0);
     assert_func(result.move.row == 1 && result.move.col == 1);
     assert_func(searcher.GetTableSize() > 0);
@@ -405,13 +403,13 @@ void TestSearchEmptyBoardIsDraw() {
 
 bool AllModesAgree(const Board& board, int depth, int radius) {
     Searcher reference(Algorithm::MINIMAX, TableType::NONE, depth, radius);
-    SearchResult expected = reference.Recommend(board, NOUGHT);
+    SearchResult expected = reference.Recommend(board, CellState::Nought);
     const Algorithm algorithms[2] = {Algorithm::MINIMAX, Algorithm::ALPHABETA};
     const TableType tables[3] = {TableType::NONE, TableType::HASH, TableType::TREE};
     for(Algorithm algorithm : algorithms) {
         for(TableType type : tables) {
             Searcher searcher(algorithm, type, depth, radius);
-            SearchResult result = searcher.Recommend(board, NOUGHT);
+            SearchResult result = searcher.Recommend(board, CellState::Nought);
             if(result.found != expected.found || result.score != expected.score) {
                 return false;
             }
@@ -455,10 +453,10 @@ void TestSearchPruningAndTable() {
     Searcher pruned(Algorithm::ALPHABETA, TableType::NONE, 9, 1);
     Searcher hash(Algorithm::MINIMAX, TableType::HASH, 9, 1);
     Searcher tree(Algorithm::MINIMAX, TableType::TREE, 9, 1);
-    SearchResult a = plain.Recommend(board, NOUGHT);
-    SearchResult b = pruned.Recommend(board, NOUGHT);
-    SearchResult c = hash.Recommend(board, NOUGHT);
-    SearchResult d = tree.Recommend(board, NOUGHT);
+    SearchResult a = plain.Recommend(board, CellState::Nought);
+    SearchResult b = pruned.Recommend(board, CellState::Nought);
+    SearchResult c = hash.Recommend(board, CellState::Nought);
+    SearchResult d = tree.Recommend(board, CellState::Nought);
     assert_func(b.nodes < a.nodes);
     assert_func(c.nodes < a.nodes && c.hits > 0);
     assert_func(c.nodes == d.nodes && c.hits == d.hits);
@@ -467,8 +465,8 @@ void TestSearchPruningAndTable() {
 
 void TestBenchmark() {
     Board board = RandomBoard(3, 3, 3, 9);
-    std::vector<BenchRow> rows = RunSearchBenchmark(board, 9, 1);
-    assert_func(rows.size() == 6);
+    ArraySequence<BenchRow> rows = RunSearchBenchmark(board, 9, 1);
+    assert_func(rows.GetLength() == 6);
     bool sameScore = true;
     for(const BenchRow& row : rows) {
         if(row.score != rows[0].score || row.ms < 0) {
@@ -477,8 +475,8 @@ void TestBenchmark() {
     }
     assert_func(sameScore);
 
-    std::vector<DictBenchRow> dictRows = RunDictionaryBenchmark(200);
-    assert_func(dictRows.size() == 6);
+    ArraySequence<DictBenchRow> dictRows = RunDictionaryBenchmark(200);
+    assert_func(dictRows.GetLength() == 6);
     assert_func(dictRows[0].count == 200 && dictRows[0].ms >= 0);
 
     WriteSearchCsv(rows, "bench_test_search.csv");

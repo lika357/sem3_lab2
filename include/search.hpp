@@ -1,10 +1,11 @@
 #pragma once
 
+#include "array_sequence.hpp"
+
 #include <chrono>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 #include "HashDictionary.hpp"
 #include "TreeDictionary.hpp"
@@ -15,22 +16,24 @@
 enum class Algorithm { MINIMAX, ALPHABETA };
 enum class TableType { NONE, HASH, TREE };
 
-const int BOUND_EXACT = 0;
-const int BOUND_LOWER = 1;
-const int BOUND_UPPER = 2;
+enum class BoundType {
+    Exact = 0,
+    Lower = 1,
+    Upper = 2
+};
 
 struct TableEntry {
     int value = 0;
-    int depth = 0;
-    int bound = BOUND_EXACT;
+    size_t depth = 0;  
+    BoundType bound = BoundType::Exact;
 };
 
 struct SearchResult {
     bool found = false;
     Move move = {0, 0};
     int score = 0;
-    long long nodes = 0;
-    long long hits = 0;
+    size_t nodes = 0; 
+    size_t hits = 0;  
     double ms = 0;
 };
 
@@ -53,37 +56,39 @@ class Searcher {
     const int INF = 1000000000;
 
     Algorithm algorithm;
-    int depth;
-    int radius;
+    size_t depth;  
+    size_t radius; 
     std::unique_ptr<IDictionary<unsigned long long, TableEntry>> table;
-    long long nodes = 0;
-    long long hits = 0;
+    size_t nodes = 0;  
+    size_t hits = 0;  
 
-    static int Other(int player) { return player == NOUGHT ? CROSS : NOUGHT; }
+    static CellState Other(CellState player) {
+        return player == CellState::Nought ? CellState::Cross : CellState::Nought;
+    }
 
     bool UseTable(const TableEntry& entry, int remaining, int& alpha, int& beta, int& value) const {
-        if(entry.depth != remaining) {
+        if(entry.depth != static_cast<size_t>(remaining)) {  
             return false;
         }
         value = entry.value;
-        if(entry.bound == BOUND_EXACT) {
+        if(entry.bound == BoundType::Exact) {
             return true;
         }
-        if(entry.bound == BOUND_LOWER && entry.value > alpha) {
+        if(entry.bound == BoundType::Lower && entry.value > alpha) {
             alpha = entry.value;
-        } else if(entry.bound == BOUND_UPPER && entry.value < beta) {
+        } else if(entry.bound == BoundType::Upper && entry.value < beta) {
             beta = entry.value;
         }
         return alpha >= beta;
     }
 
-    int Run(Board& board, int remaining, int alpha, int beta, int player) {
+    int Run(Board& board, int remaining, int alpha, int beta, CellState player) {
         nodes++;
-        int winner = board.Winner();
-        if(winner == NOUGHT) {
+        CellState winner = board.Winner();
+        if(winner == CellState::Nought) {
             return WIN + remaining;
         }
-        if(winner == CROSS) {
+        if(winner == CellState::Cross) {
             return -(WIN + remaining);
         }
         if(board.IsFull()) {
@@ -106,9 +111,9 @@ class Searcher {
         }
 
         bool prune = algorithm == Algorithm::ALPHABETA;
-        bool maximizing = player == NOUGHT;
+        bool maximizing = player == CellState::Nought;
         int best = maximizing ? -INF : INF;
-        std::vector<Move> moves = board.GetMoves(radius);
+        ArraySequence<Move> moves = board.GetMoves(static_cast<int>(radius));  
         for(const Move& move : moves) {
             board.Place(move.row, move.col, player);
             int value = Run(board, remaining - 1, alpha, beta, Other(player));
@@ -131,12 +136,12 @@ class Searcher {
         if(table) {
             TableEntry entry;
             entry.value = best;
-            entry.depth = remaining;
-            entry.bound = BOUND_EXACT;
+            entry.depth = static_cast<size_t>(remaining);  
+            entry.bound = BoundType::Exact;
             if(best <= origAlpha) {
-                entry.bound = BOUND_UPPER;
+                entry.bound = BoundType::Upper;
             } else if(best >= origBeta) {
-                entry.bound = BOUND_LOWER;
+                entry.bound = BoundType::Lower;
             }
             table->Add(key, entry);
         }
@@ -144,7 +149,7 @@ class Searcher {
     }
 
    public:
-    Searcher(Algorithm algorithm, TableType tableType, int depth, int radius)
+    Searcher(Algorithm algorithm, TableType tableType, size_t depth, size_t radius)  
         : algorithm(algorithm), depth(depth), radius(radius) {
         if(depth < 1) {
             throw std::invalid_argument("Depth must be positive");
@@ -158,7 +163,8 @@ class Searcher {
             table.reset(new TreeDictionary<unsigned long long, TableEntry>());
         }
     }
-    SearchResult Recommend(Board board, int player = NOUGHT) {
+
+    SearchResult Recommend(Board board, CellState player = CellState::Nought) {
         SearchResult result;
         nodes = 0;
         hits = 0;
@@ -167,18 +173,18 @@ class Searcher {
         }
         auto start = std::chrono::steady_clock::now();
 
-        std::vector<Move> moves;
-        if(board.Winner() == EMPTY && !board.IsFull()) {
-            moves = board.GetMoves(radius);
+        ArraySequence<Move> moves;
+        if(board.Winner() == CellState::Empty && !board.IsFull()) {
+            moves = board.GetMoves(static_cast<int>(radius)); 
         }
         bool prune = algorithm == Algorithm::ALPHABETA;
-        bool maximizing = player == NOUGHT;
+        bool maximizing = player == CellState::Nought;
         int alpha = -INF;
         int beta = INF;
         int best = maximizing ? -INF : INF;
         for(const Move& move : moves) {
             board.Place(move.row, move.col, player);
-            int value = Run(board, depth - 1, alpha, beta, Other(player));
+            int value = Run(board, static_cast<int>(depth) - 1, alpha, beta, Other(player));
             board.Erase(move.row, move.col);
             bool better = maximizing ? value > best : value < best;
             if(better || !result.found) {

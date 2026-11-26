@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <initializer_list>
 #include <stdexcept>
 #include <utility>
 
@@ -40,6 +41,15 @@ class ArraySequence {
         other.capacity = 0;
     }
 
+    ArraySequence(std::initializer_list<T> init) : data(nullptr), length(0), capacity(0) {
+        for(const T& item : init) { Append(item); }
+    }
+
+    template<typename Iterator>
+    ArraySequence(Iterator first, Iterator last) : data(nullptr), length(0), capacity(0) {
+        for(Iterator it = first; it != last; ++it) { Append(*it); }
+    }
+
     ArraySequence& operator=(const ArraySequence& other) {
         if(this != &other) {
             ArraySequence copy(other);
@@ -66,11 +76,24 @@ class ArraySequence {
     ~ArraySequence() { delete[] data; }
 
     void Append(const T& item) {
-        if(length == capacity) {
-            Grow();
-        }
-        data[length] = item;
-        length++;
+    if(length == capacity) {
+        Grow();
+    }
+    data[length] = item;
+    length++;
+}
+
+void Append(T&& item) {
+    if(length == capacity) {
+        Grow();
+    }
+    data[length] = std::move(item);
+    length++;
+}
+
+    void assign(size_t count, const T& value) {
+        Clear();
+        for(size_t i = 0; i < count; i++) { Append(value); }
     }
 
     T& Get(size_t index) {
@@ -89,6 +112,8 @@ class ArraySequence {
     T& GetLast() { return Get(length - 1); }
 
     size_t GetLength() const { return length; }
+
+    bool empty() const { return length == 0; }
 
     void RemoveAt(size_t index) {
         CheckIndex(index);
